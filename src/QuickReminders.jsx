@@ -130,6 +130,9 @@ export default function QuickReminders() {
   const [notifPermission, setNotifPermission] = useState(
     typeof Notification !== "undefined" ? Notification.permission : "denied"
   );
+  const [notifStatus, setNotifStatus] = useState("idle"); // idle | asking | error
+  const isStandalone = window.navigator.standalone === true ||
+    window.matchMedia("(display-mode: standalone)").matches;
   const inputRef = useRef(null);
 
   // Re-read permission any time the app is focused (e.g. after granting in Settings)
@@ -144,9 +147,18 @@ export default function QuickReminders() {
   }, []);
 
   const requestNotifPermission = async () => {
-    if (typeof Notification === "undefined") return;
-    const perm = await Notification.requestPermission();
-    setNotifPermission(perm);
+    if (typeof Notification === "undefined") {
+      setNotifStatus("error");
+      return;
+    }
+    setNotifStatus("asking");
+    try {
+      const perm = await Notification.requestPermission();
+      setNotifPermission(perm);
+      setNotifStatus(perm === "granted" ? "idle" : "error");
+    } catch (e) {
+      setNotifStatus("error");
+    }
   };
 
   // Tick every second for countdown
@@ -416,22 +428,27 @@ export default function QuickReminders() {
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: "#000" }}>Enable Notifications</div>
             <div style={{ fontSize: 13, color: "#8E8E93" }}>
-              {notifPermission === "denied"
-                ? "Blocked — enable in Settings"
-                : "Tap to allow reminders to alert you"}
+              {!isStandalone
+                ? "Open from Home Screen icon to enable"
+                : notifPermission === "denied"
+                ? "Blocked — enable in Settings → Reminders"
+                : notifStatus === "error"
+                ? "Could not request permission — try Settings"
+                : "Required to alert you when time is up"}
             </div>
           </div>
-          {notifPermission !== "denied" && (
+          {isStandalone && notifPermission !== "denied" && (
             <button
               onClick={requestNotifPermission}
               style={{
-                background: "#007AFF", color: "#fff",
+                background: notifStatus === "asking" ? "#8E8E93" : "#007AFF",
+                color: "#fff",
                 border: "none", borderRadius: 8,
                 padding: "7px 14px", fontSize: 14, fontWeight: 600,
                 cursor: "pointer", fontFamily: "inherit", flexShrink: 0,
               }}
             >
-              Allow
+              {notifStatus === "asking" ? "…" : "Allow"}
             </button>
           )}
         </div>
