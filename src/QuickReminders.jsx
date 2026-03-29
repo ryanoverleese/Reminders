@@ -132,12 +132,22 @@ export default function QuickReminders() {
   );
   const inputRef = useRef(null);
 
-  // Request notification permission on mount
+  // Re-read permission any time the app is focused (e.g. after granting in Settings)
   useEffect(() => {
-    if (typeof Notification !== "undefined" && Notification.permission === "default") {
-      Notification.requestPermission().then((perm) => setNotifPermission(perm));
-    }
+    const sync = () => {
+      if (typeof Notification !== "undefined") {
+        setNotifPermission(Notification.permission);
+      }
+    };
+    window.addEventListener("focus", sync);
+    return () => window.removeEventListener("focus", sync);
   }, []);
+
+  const requestNotifPermission = async () => {
+    if (typeof Notification === "undefined") return;
+    const perm = await Notification.requestPermission();
+    setNotifPermission(perm);
+  };
 
   // Tick every second for countdown
   useEffect(() => {
@@ -382,6 +392,50 @@ export default function QuickReminders() {
           {activeReminders.length} active
         </span>
       </div>
+
+      {/* Notification permission banner */}
+      {notifPermission !== "granted" && (
+        <div style={{
+          background: "#fff",
+          borderRadius: 14,
+          margin: "0 16px 12px",
+          padding: "14px 16px",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+        }}>
+          <div style={{
+            width: 34, height: 34, borderRadius: 9,
+            background: "#FF9500",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
+          }}>
+            <BellIcon size={18} color="#fff" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#000" }}>Enable Notifications</div>
+            <div style={{ fontSize: 13, color: "#8E8E93" }}>
+              {notifPermission === "denied"
+                ? "Blocked — enable in Settings"
+                : "Tap to allow reminders to alert you"}
+            </div>
+          </div>
+          {notifPermission !== "denied" && (
+            <button
+              onClick={requestNotifPermission}
+              style={{
+                background: "#007AFF", color: "#fff",
+                border: "none", borderRadius: 8,
+                padding: "7px 14px", fontSize: 14, fontWeight: 600,
+                cursor: "pointer", fontFamily: "inherit", flexShrink: 0,
+              }}
+            >
+              Allow
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Alert banners for fired reminders */}
       {alertReminders.map((r) => (
