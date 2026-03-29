@@ -2,7 +2,7 @@
   "name": "Reminders",
   "short_name": "Reminders",
   "description": "ADHD Reminders",
-  "start_url": "/Reminders/",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#F2F2F7",
   "theme_color": "#F2F2F7",
