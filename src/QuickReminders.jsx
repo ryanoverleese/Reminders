@@ -125,7 +125,14 @@ async function sendSystemNotification(title) {
 }
 
 export default function QuickReminders() {
-  const [reminders, setReminders] = useState([]);
+  const [reminders, setReminders] = useState(() => {
+    try {
+      const saved = localStorage.getItem("reminders");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [showNewForm, setShowNewForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [selectedDuration, setSelectedDuration] = useState(null);
@@ -169,6 +176,11 @@ export default function QuickReminders() {
       setNotifStatus("error");
     }
   };
+
+  // Persist reminders to localStorage
+  useEffect(() => {
+    localStorage.setItem("reminders", JSON.stringify(reminders));
+  }, [reminders]);
 
   // Tick every second for countdown
   useEffect(() => {
