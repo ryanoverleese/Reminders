@@ -96,6 +96,23 @@ const TrashIcon = () => (
   </svg>
 );
 
+async function sendFamilyAlert(message, delaySeconds) {
+  try {
+    await fetch("https://ntfy.sh/overfam-alerts", {
+      method: "POST",
+      headers: {
+        "Title": "Reminders",
+        "Click": "https://remindersaro.netlify.app/",
+        "Delay": `${delaySeconds}s`,
+      },
+      body: message,
+    });
+  } catch (e) {
+    // Silently fail — in-app alert still works as fallback
+  }
+}
+
+
 async function sendSystemNotification(title) {
   if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
   // Use service worker registration when available (required for mobile PWAs)
@@ -224,6 +241,7 @@ export default function QuickReminders() {
       completed: false,
     };
     setReminders((prev) => [newReminder, ...prev]);
+    sendFamilyAlert(newTitle.trim(), PRESET_DURATIONS[selectedDuration].seconds);
     setNewTitle("");
     setSelectedDuration(null);
     setSelectedRepeat(0);
