@@ -89,18 +89,31 @@ const TrashIcon = () => (
   </svg>
 );
 
-function sendSystemNotification(title) {
-  if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-    try {
-      new Notification("Reminder", {
+async function sendSystemNotification(title) {
+  if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+  // Use service worker registration when available (required for mobile PWAs)
+  if ("serviceWorker" in navigator) {
+    const reg = await navigator.serviceWorker.ready.catch(() => null);
+    if (reg?.showNotification) {
+      reg.showNotification("Reminder", {
         body: title,
-        icon: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%23007AFF"/><circle cx="32" cy="30" r="16" stroke="white" stroke-width="3" fill="none"/><path d="M32 20v12l8 5" stroke="white" stroke-width="3" stroke-linecap="round"/><path d="M24 48h16" stroke="white" stroke-width="3" stroke-linecap="round"/></svg>'),
+        icon: "/icon-192.png",
+        badge: "/icon-192.png",
         tag: "reminder-" + Date.now(),
         requireInteraction: true,
       });
-    } catch (e) {
-      // Notification constructor may fail in some environments
+      return;
     }
+  }
+  // Fallback for desktop browsers
+  try {
+    new Notification("Reminder", {
+      body: title,
+      tag: "reminder-" + Date.now(),
+      requireInteraction: true,
+    });
+  } catch (e) {
+    // Notification constructor may fail in some environments
   }
 }
 
