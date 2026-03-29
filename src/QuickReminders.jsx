@@ -16,6 +16,13 @@ const PRESET_DURATIONS = [
   { label: "1 week", seconds: 604800 },
 ];
 
+const REPEAT_OPTIONS = [
+  { label: "None", seconds: null },
+  { label: "1 min", seconds: 60 },
+  { label: "1 hour", seconds: 3600 },
+  { label: "1 day", seconds: 86400 },
+];
+
 function formatCountdown(seconds) {
   if (seconds <= 0) return "Now";
   const d = Math.floor(seconds / 86400);
@@ -123,6 +130,7 @@ export default function QuickReminders() {
   const [newTitle, setNewTitle] = useState("");
   const [selectedDuration, setSelectedDuration] = useState(null);
   const [showDurationPicker, setShowDurationPicker] = useState(false);
+  const [selectedRepeat, setSelectedRepeat] = useState(0); // index into REPEAT_OPTIONS, 0 = None
   const [tick, setTick] = useState(0);
   const [editingId, setEditingId] = useState(null);
   const [firedReminders, setFiredReminders] = useState(new Set());
@@ -170,29 +178,45 @@ export default function QuickReminders() {
   // Check for fired reminders and send system notifications
   useEffect(() => {
     const now = Date.now();
+    const toReschedule = [];
     reminders.forEach((r) => {
       if (!r.completed && r.dueAt <= now && !firedReminders.has(r.id)) {
-        setFiredReminders((prev) => new Set([...prev, r.id]));
         sendSystemNotification(r.title);
+        if (r.repeat) {
+          toReschedule.push(r.id);
+        } else {
+          setFiredReminders((prev) => new Set([...prev, r.id]));
+        }
       }
     });
+    if (toReschedule.length > 0) {
+      setReminders((prev) =>
+        prev.map((r) =>
+          toReschedule.includes(r.id)
+            ? { ...r, dueAt: Date.now() + r.repeat }
+            : r
+        )
+      );
+    }
   }, [tick, reminders, firedReminders]);
 
   const addReminder = useCallback(() => {
     if (!newTitle.trim() || selectedDuration === null) return;
+    const repeatSeconds = REPEAT_OPTIONS[selectedRepeat].seconds;
     const newReminder = {
       id: Date.now(),
       title: newTitle.trim(),
       dueAt: Date.now() + PRESET_DURATIONS[selectedDuration].seconds * 1000,
+      repeat: repeatSeconds ? repeatSeconds * 1000 : null,
       completed: false,
-      fired: false,
     };
     setReminders((prev) => [newReminder, ...prev]);
     setNewTitle("");
     setSelectedDuration(null);
+    setSelectedRepeat(0);
     setShowNewForm(false);
     setShowDurationPicker(false);
-  }, [newTitle, selectedDuration]);
+  }, [newTitle, selectedDuration, selectedRepeat]);
 
   const toggleComplete = (id) => {
     setReminders((prev) =>
@@ -506,11 +530,10 @@ export default function QuickReminders() {
                           <span>Overdue — {formatDueTime(r.dueAt)}</span>
                         </>
                       ) : (
-                        <>
-                          <span style={{ color: "#8E8E93" }}>
-                            {formatCountdown(remaining)} — {formatDueTime(r.dueAt)}
-                          </span>
-                        </>
+                        <span style={{ color: "#8E8E93" }}>
+                          {formatCountdown(remaining)} — {formatDueTime(r.dueAt)}
+                          {r.repeat && ` · Repeats every ${REPEAT_OPTIONS.find(o => o.seconds && o.seconds * 1000 === r.repeat)?.label ?? ""}`}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -685,6 +708,33 @@ export default function QuickReminders() {
                 </div>
               </div>
             )}
+
+            {/* Repeat picker */}
+            <div style={{ background: "#fff", borderRadius: 12, margin: "12px 16px 0", padding: "14px 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <div style={{
+                  width: 30, height: 30, borderRadius: 7, background: "#34C759",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M2 8C2 11.3 4.7 14 8 14C11.3 14 14 11.3 14 8C14 4.7 11.3 2 8 2" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                    <path d="M2 4V8H6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <span style={{ fontSize: 17, color: "#000" }}>Repeat</span>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                {REPEAT_OPTIONS.map((opt, i) => (
+                  <button
+                    key={i}
+                    style={styles.durationChip(selectedRepeat === i)}
+                    onClick={() => setSelectedRepeat(i)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* Preview */}
             {selectedDuration !== null && (
