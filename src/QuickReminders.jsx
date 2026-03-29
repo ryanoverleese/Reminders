@@ -131,6 +131,7 @@ export default function QuickReminders() {
   const [selectedDuration, setSelectedDuration] = useState(null);
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [selectedRepeat, setSelectedRepeat] = useState(0); // index into REPEAT_OPTIONS, 0 = None
+  const [showRepeatPicker, setShowRepeatPicker] = useState(false);
   const [tick, setTick] = useState(0);
   const [editingId, setEditingId] = useState(null);
   const [firedReminders, setFiredReminders] = useState(new Set());
@@ -216,6 +217,7 @@ export default function QuickReminders() {
     setSelectedRepeat(0);
     setShowNewForm(false);
     setShowDurationPicker(false);
+    setShowRepeatPicker(false);
   }, [newTitle, selectedDuration, selectedRepeat]);
 
   const toggleComplete = (id) => {
@@ -605,6 +607,7 @@ export default function QuickReminders() {
           setNewTitle("");
           setSelectedDuration(null);
           setShowDurationPicker(false);
+    setShowRepeatPicker(false);
         }}>
           <div style={styles.formCard} onClick={(e) => e.stopPropagation()}>
             {/* Form header */}
@@ -616,6 +619,7 @@ export default function QuickReminders() {
                   setNewTitle("");
                   setSelectedDuration(null);
                   setShowDurationPicker(false);
+    setShowRepeatPicker(false);
                 }}
               >
                 Cancel
@@ -709,32 +713,51 @@ export default function QuickReminders() {
               </div>
             )}
 
-            {/* Repeat picker */}
-            <div style={{ background: "#fff", borderRadius: 12, margin: "12px 16px 0", padding: "14px 16px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                <div style={{
-                  width: 30, height: 30, borderRadius: 7, background: "#34C759",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M2 8C2 11.3 4.7 14 8 14C11.3 14 14 11.3 14 8C14 4.7 11.3 2 8 2" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-                    <path d="M2 4V8H6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+            {/* Repeat picker toggle */}
+            <div
+              style={{ background: "#fff", borderRadius: 12, margin: "12px 16px 0", cursor: "pointer" }}
+              onClick={() => setShowRepeatPicker(!showRepeatPicker)}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{
+                    width: 30, height: 30, borderRadius: 7, background: "#34C759",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M2 8C2 11.3 4.7 14 8 14C11.3 14 14 11.3 14 8C14 4.7 11.3 2 8 2" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                      <path d="M2 4V8H6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <span style={{ fontSize: 17, color: "#000" }}>Repeat</span>
                 </div>
-                <span style={{ fontSize: 17, color: "#000" }}>Repeat</span>
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                {REPEAT_OPTIONS.map((opt, i) => (
-                  <button
-                    key={i}
-                    style={styles.durationChip(selectedRepeat === i)}
-                    onClick={() => setSelectedRepeat(i)}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {selectedRepeat !== 0 && (
+                    <span style={{ fontSize: 17, color: "#007AFF", fontWeight: 500 }}>
+                      {REPEAT_OPTIONS[selectedRepeat].label}
+                    </span>
+                  )}
+                  <ChevronIcon direction={showRepeatPicker ? "down" : "right"} color="#C7C7CC" />
+                </div>
               </div>
             </div>
+
+            {/* Repeat chips */}
+            {showRepeatPicker && (
+              <div style={{ background: "#fff", borderRadius: 12, margin: "12px 16px 0", padding: "14px 16px" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {REPEAT_OPTIONS.map((opt, i) => (
+                    <button
+                      key={i}
+                      style={styles.durationChip(selectedRepeat === i)}
+                      onClick={() => setSelectedRepeat(i)}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Preview */}
             {selectedDuration !== null && (
